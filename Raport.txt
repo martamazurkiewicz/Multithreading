@@ -1,0 +1,9 @@
+Wszystkie pliki były kompilowane i testowane na Ubuntu Server. Pierwsze 3 z użyciem biblioteki pthread, czwarty wymaga biblioteki Intel TBB.
+W pierwszej wersji programu, bez zamka, dochodzi do wyścigu. Na maszynie wirtualnej do wyścigu udało się doprowadzić dopiero przy 20 wątkach. Większość wywołań programu dało wynik 1011760, jedno 1011750. 
+Wraz ze zwiększaniem liczby wątków wzrasta różnica między numeryczny, a analitycznym wynikiem całki.
+Przy 10 wątkach 2 wersja programu wykonywała się 10-13 milisekund, a wersja 3, ze zmienną lokalną, 4-8 ms. Dla 10 wątków wynik jest bardzo niedokładny - wynosi 1512500. 
+Przy 4 wątkach czas wykonywania 2 wersji programu był niewiele krótszy (7-12 ms). Maksymalny czas 3 wersji uległ poprawie - wyniósł 5 +/- 1 ms. Wynik - 1805360. 
+Dla 2 wątków wynik (1893590) jest najbliższy analitycznemu, ale czas wykonywania jest dłuższy o 2–3 ms. 
+Czwarta wersja programu wykorzystuje pararell_reduce. Dodawanie wysokości prostokątów jest operacją przemienną, tak więc można zastosować pararell_reduce. Nie wymaga ono jawnego użycia zamków. Pierwsza część pararell_reduce odpowiada za policzenie wysokości prostokątów z przedziału, druga za ich zsumowanie.
+Wyniki całki były takie same jak dla programów 2 i 3. Dla 4 wątków czas wykonywania wyniósł 5 do 12 ms. Dla 2 i 10 wątków czas był podobny. Nawet przy 10 wątkach niektóre wywołania programu trwały tylko 5 ms. Niemniej program miał „skoki” do 12 ms przy 4 wątkach. 
+Biorąc pod uwagę dokładność wyniku i czas wykonywania, program najlepiej poradził sobie przy 4 wątkach w wersji 3.
