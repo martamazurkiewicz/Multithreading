@@ -47,7 +47,7 @@ namespace Task2
                 private int right, left;
                 private SemaphoreSlim[] forks;
                 private SemaphoreSlim[] books;
-                private bool[] readBooks;
+                private bool[] unreadBooks;
 
                 public Philosopher(int number, SemaphoreSlim[] forks, SemaphoreSlim[] books)
                 {
@@ -55,10 +55,10 @@ namespace Task2
                     //_rn = new Random();
                     this.forks = forks;
                     this.books = books;
-                    readBooks = new bool[books.Length];
+                    unreadBooks = new bool[books.Length];
                     for (var i = 0; i < books.Length; i++)
                     {
-                        readBooks[i] = false;
+                        unreadBooks[i] = true;
                     }
                     left = number;
                     right = (number + 1) % forks.Length;
@@ -75,33 +75,38 @@ namespace Task2
                 {
                     for (var i = 0; i < books.Length; i++)
                     {
-                        if (!readBooks[i])
+                        if (unreadBooks[i] && books[i].CurrentCount == 1)
                         {
-                            books[i].Wait();
-                            Eat();
-                            readBooks[i] = true;
-                            books[i].Release();
-                            return false;
+                            Eat(i);
+                            return true;
                         }
                     }
-                    return true;
+                    for (var i = 0; i < books.Length; i++)
+                    {
+                        if (unreadBooks[i])
+                        {
+                            Eat(i);
+                            return true;
+                        }
+                    }
+                    return false;
                 }
 
-                private void Eat()
+                private void Eat(int chosenBookNumber)
                 {
+                    books[chosenBookNumber].Wait();
+                    unreadBooks[chosenBookNumber] = false;
                     Console.WriteLine($"Philosopher {_number} eats...");
                     //Thread.Sleep(_rn.Next(500, 1000));
-                    for (int i = 0; i < readBooks.Length; i++)
-                    {
-                        Console.Write(readBooks[i]);
-                    }
+                    Console.WriteLine($"Philosopher {_number} is reading book {chosenBookNumber}...");
                     Console.WriteLine($"Philosopher {_number} finished eating");
+                    books[chosenBookNumber].Release();
                 }
         
                 public void Dine()
                 {
-                    var hasReadAllBooks = false;
-                    while (!hasReadAllBooks)
+                    var hasBooksToRead = true;
+                    while (hasBooksToRead)
                     {
                         Think();
                         if (_number == forks.Length - 1)
@@ -114,7 +119,7 @@ namespace Task2
                             forks[left].Wait();
                             forks[right].Wait();
                         }
-                        hasReadAllBooks = ReadAndEat();
+                        hasBooksToRead = ReadAndEat();
                         forks[right].Release();
                         forks[left].Release();
                     }
@@ -127,7 +132,7 @@ namespace Task2
     {
         static void Main(string[] args)
         {
-            var dinnerTable = new DinnerTable(5, 10);
+            var dinnerTable = new DinnerTable(10, 100);
             //Console.WriteLine("Dinner finished!");
         }
     }
