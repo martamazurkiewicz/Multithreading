@@ -9,14 +9,17 @@ namespace Task2
         private SemaphoreSlim[] books;
         private Philosopher[] philosophers;
         private Thread[] threads;
+        private int[] chairs;
 
         public DinnerTable(int philosophersNumber, int booksNumber)
         {
             forks = new SemaphoreSlim[philosophersNumber];
             books = new SemaphoreSlim[booksNumber];
+            chairs = new int[philosophersNumber];
             for (var i = 0; i < philosophersNumber; i++)
             {
                 forks[i] = new SemaphoreSlim(1, 1);
+                chairs[i] = i;
             }
             for (var i = 0; i < booksNumber; i++)
             {
@@ -31,11 +34,30 @@ namespace Task2
 
         private void StartDinner()
         {
+            ShuffleChairs(100);
             for (var i = 0; i < philosophers.Length; i++)
             {
-                philosophers[i] = new Philosopher(i, forks, books);
+                philosophers[i] = new Philosopher(i, forks, books, chairs[i]);
+                Console.WriteLine($"Philosopher {i} is sitting on chair {chairs[i]}");
+            }
+            for (int i = 0; i < philosophers.Length; i++)
+            {
                 threads[i] = new Thread(philosophers[i].Dine);
                 threads[i].Start();
+            }
+        }
+
+        private void ShuffleChairs(int shuffleNumber)
+        {
+            var rng = new Random();
+            int j, k;
+            for (int i = 0; i < shuffleNumber; i++)
+            {
+                j = rng.Next(philosophers.Length);
+                k = rng.Next(philosophers.Length);
+                var tmp = chairs[j];
+                chairs[j] = chairs[k];
+                chairs[k] = tmp;
             }
         }
 
@@ -50,16 +72,14 @@ namespace Task2
         class Philosopher
             {
                 private readonly int _number;
-                //private readonly Random _rn;
                 private int right, left;
                 private SemaphoreSlim[] forks;
                 private SemaphoreSlim[] books;
                 private bool[] unreadBooks;
 
-                public Philosopher(int number, SemaphoreSlim[] forks, SemaphoreSlim[] books)
+                public Philosopher(int number, SemaphoreSlim[] forks, SemaphoreSlim[] books, int left)
                 {
                     _number = number;
-                    //_rn = new Random();
                     this.forks = forks;
                     this.books = books;
                     unreadBooks = new bool[books.Length];
@@ -67,8 +87,8 @@ namespace Task2
                     {
                         unreadBooks[i] = true;
                     }
-                    left = number;
-                    right = (number + 1) % forks.Length;
+                    this.left = left;
+                    right = (left + 1) % forks.Length;
                 }
         
                 private void Think()
@@ -84,6 +104,7 @@ namespace Task2
                         if (unreadBooks[i] && books[i].CurrentCount == 1)
                         {
                             Eat(i);
+                            return;
                         }
                     }
                     for (var i = 0; i < books.Length; i++)
@@ -91,6 +112,7 @@ namespace Task2
                         if (unreadBooks[i])
                         {
                             Eat(i);
+                            return;
                         }
                     }
                 }
@@ -127,7 +149,7 @@ namespace Task2
                         }
 
                         Think();
-                        if (_number == forks.Length - 1)
+                        if (left == forks.Length - 1)
                         {
                             forks[right].Wait();
                             forks[left].Wait();
@@ -150,7 +172,7 @@ namespace Task2
     {
         static void Main(string[] args)
         {
-            var dinnerTable = new DinnerTable(100, 1000);
+            var dinnerTable = new DinnerTable(10, 20);
         }
     }
 }
