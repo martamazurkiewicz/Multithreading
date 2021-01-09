@@ -161,10 +161,9 @@ namespace Task2
             {
                 _books[chosenBookNumber].Wait();
                 _unreadBooks[chosenBookNumber] = false;
-                Console.WriteLine($"Philosopher {_number} eats...");
-                Console.WriteLine($"Philosopher {_number} is reading book {chosenBookNumber}...");
-                Console.WriteLine($"Philosopher {_number} finished eating");
+                Console.WriteLine($"Philosopher {_number} is eating and reading book {chosenBookNumber}...");
                 _books[chosenBookNumber].Release();
+                Console.WriteLine($"Philosopher {_number} finished eating");
             }
 
             private bool HasBooksToRead()
