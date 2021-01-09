@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Task2
 {
@@ -10,9 +11,11 @@ namespace Task2
         private Philosopher[] philosophers;
         private Thread[] threads;
         private int[] chairs;
+        private Stopwatch sw;
 
         public DinnerTable(int philosophersNumber, int booksNumber)
         {
+            sw = new Stopwatch();
             forks = new SemaphoreSlim[philosophersNumber];
             books = new SemaphoreSlim[booksNumber];
             chairs = new int[philosophersNumber];
@@ -30,6 +33,7 @@ namespace Task2
             StartDinner();
             WaitForDinnerToFinish();
             Console.WriteLine("Dinner finished");
+            Console.WriteLine($"Elapsed Time: {sw.ElapsedMilliseconds}");
         }
 
         private void StartDinner()
@@ -45,6 +49,7 @@ namespace Task2
                 threads[i] = new Thread(philosophers[i].Dine);
                 threads[i].Start();
             }
+            sw.Start();
         }
 
         private void ShuffleChairs(int shuffleNumber)
@@ -67,6 +72,7 @@ namespace Task2
             {
                 threads[i].Join();
             }
+            sw.Stop();
         }
 
         class Philosopher
@@ -150,7 +156,7 @@ namespace Task2
 
                         Think();
 
-                    /* if (left == forks.Length - 1)
+                     if (left == forks.Length - 1)
                      {
                          forks[right].Wait();
                          forks[left].Wait();
@@ -159,21 +165,23 @@ namespace Task2
                      {
                          forks[left].Wait();
                          forks[right].Wait();
-                     }*/
-                        while (true)
+                     }
+                    /*
+                    while (true)
+                    {
+                        forks[left].Wait();
+                        if (forks[right].Wait(0))
                         {
-                            forks[left].Wait();
-                            if (forks[right].Wait(0))
-                            {
-                                break;
-                            }
-                            else
-                            {
-                            forks[left].Release();
-                            }
+                            break;
                         }
-                       
-                        ReadAndEat();
+                        else
+                        {
+                        forks[left].Release();
+                        }
+                    }
+                    */
+
+                    ReadAndEat();
                         forks[right].Release();
                         forks[left].Release();
                     } 
