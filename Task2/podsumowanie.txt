@@ -1,5 +1,6 @@
-W zadaniu wykorzystaliśmy semafory. Semafor to narzędzie synchronizacji, które ogranicza liczbę wątków, które mogą jednocześnie mieć dostęp do zasobów. SemaphoreSlim, który wykorzystaliśmy jest lżejszym odpowiednikiem klasy Semaphore.
-Nie korzysta z semaforów jądra Windowsa i nie pozwala na użycie systemowych semaforów. SemaphoreSlim ma metody Wait() i Release(). 
+W zadaniu wykorzystaliśmy semafory. Semafor to narzędzie synchronizacji ograniczające liczbę wątków, które mogą jednocześnie mieć dostęp do zasobów. SemaphoreSlim, który wykorzystaliśmy jest lżejszym odpowiednikiem klasy Semaphore.
+SemaphoreSlim nie korzysta z semaforów jądra Windowsa i pozwala tylko na użycie lokalnych semaforów (dla aplikacji). Semafor ma metody Wait() i Release(). 
 Wait() oczekuje, aż wartość semafora będzie niższa od jego maksymalnej wartości, a następnie inkrementuje semafor (zajmuje zasób). 
 Release() dekrementuje semafor. Wykorzystaliśmy także właściwość CurrentCount, która definiuje ile jeszcze wątków może symultanicznie korzystać z zasobu. 
-W programie widelce jak i książki zostały zdefiniowane jako tablice semaforów binarnych o maksymalnej i początkowej wartości równej 1, ponieważ książka, jak i widelec, może być równocześnie używana przez tylko jednego filozofa.
+W programie widelce, jak i książki zostały zdefiniowane jako tablice semaforów binarnych o maksymalnej i początkowej wartości równej 1, ponieważ i książka, i widelec, może być równocześnie używana przez tylko jednego filozofa.
+Do tasowania miejsc przy stole wykorzystaliśmy zamki. Dzięki nim możemy dokonać zamiany wartości w dwóch komórkach tablicy, bez utraty danych.
