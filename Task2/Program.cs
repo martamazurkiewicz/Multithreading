@@ -149,16 +149,30 @@ namespace Task2
                         }
 
                         Think();
-                        if (left == forks.Length - 1)
+
+                    /* if (left == forks.Length - 1)
+                     {
+                         forks[right].Wait();
+                         forks[left].Wait();
+                     }
+                     else
+                     {
+                         forks[left].Wait();
+                         forks[right].Wait();
+                     }*/
+                        while (true)
                         {
-                            forks[right].Wait();
                             forks[left].Wait();
+                            if (forks[right].Wait(0))
+                            {
+                                break;
+                            }
+                            else
+                            {
+                            forks[left].Release();
+                            }
                         }
-                        else
-                        {
-                            forks[left].Wait();
-                            forks[right].Wait();
-                        }
+                       
                         ReadAndEat();
                         forks[right].Release();
                         forks[left].Release();
