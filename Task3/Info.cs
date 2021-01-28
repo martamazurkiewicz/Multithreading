@@ -3,9 +3,9 @@
     public abstract class Info
     {
         public InternalNode parent;
-        public INode leaf;
+        public LeafNode leaf;
 
-        protected Info(InternalNode parent, INode leaf)
+        protected Info(InternalNode parent, LeafNode leaf)
         {
             this.leaf = leaf;
             this.parent = parent;
