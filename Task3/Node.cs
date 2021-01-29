@@ -8,5 +8,7 @@
         {
             this.key = key;
         }
+
+        public override string ToString() => key.ToString();
     }
 }
