@@ -10,12 +10,12 @@ namespace Task3
 
         public BST()
         {
-            var leftChild = new LeafNode(int.MinValue);
+            var leftChild = new InternalNode(int.MaxValue-1, new LeafNode(int.MaxValue-2), new LeafNode(int.MaxValue-1));
             var rightChild = new LeafNode(int.MaxValue);
             root = new InternalNode(int.MaxValue, leftChild, rightChild);
         }
 
-        private bool IsDeletionPermitted(int key) => key != int.MinValue && key != int.MaxValue;
+        private bool IsDeletionPermitted(int key) => key != int.MaxValue-1 && key != int.MaxValue;
 
         public override string ToString() => ToStringRecursive(root);
 
@@ -80,7 +80,7 @@ namespace Task3
                     else
                     {
                         operation = new DeleteInfo(parent, leaf, grandparent, parentUpdate);
-                        result = Update.CAS(grandparent.update, grandparentUpdate, new Update(State.DFlag, operation));
+                        result = Update.CAS(ref grandparent.update, grandparentUpdate, new Update(State.DFlag, operation));
                         if (result == grandparentUpdate)
                         {
                             if (HelpDelete(operation))
@@ -98,7 +98,7 @@ namespace Task3
 
         private bool HelpDelete(DeleteInfo operation)
         {
-            var result = Update.CAS(operation.parent.update, operation.parentUpdate, new Update(State.Mark, operation));
+            var result = Update.CAS(ref operation.parent.update, operation.parentUpdate, new Update(State.Mark, operation));
             if (result == operation.parentUpdate || result == new Update(State.Mark, operation))
             {
                 HelpMarked(operation);
@@ -107,7 +107,7 @@ namespace Task3
             else
             {
                 Help(result);
-                Update.CAS(operation.grandparent.update, new Update(State.DFlag, operation),
+                Update.CAS(ref operation.grandparent.update, new Update(State.DFlag, operation),
                     new Update(State.Clean, operation));
                 return false;
             }
@@ -120,8 +120,8 @@ namespace Task3
                 other = operation.parent.left;
             else
                 other = operation.parent.right;
-            InternalNode.CASChild(operation.grandparent, operation.parent, other);
-            Update.CAS(operation.grandparent.update, new Update(State.DFlag, operation),
+            InternalNode.CASChild(ref operation.grandparent, operation.parent, other);
+            Update.CAS(ref operation.grandparent.update, new Update(State.DFlag, operation),
                 new Update(State.Clean, operation));
         }
 
@@ -149,7 +149,6 @@ namespace Task3
             while (true)
             {
                 var searchResult = Search(key);
-                Console.WriteLine(searchResult);
                 parent = searchResult.parent;
                 leaf = searchResult.leaf;
                 parentUpdate = searchResult.pUpdate;
@@ -164,21 +163,14 @@ namespace Task3
                     var leftChild = newNode.key < newSibling.key ? newNode : newSibling;
                     var rightChild = newNode.key < newSibling.key ? newSibling : newNode;
                     newInternalNode = new InternalNode(newInternalNodeKey, leftChild, rightChild);
-                    Console.WriteLine("newInternalNode");
-                    Console.WriteLine(newInternalNode);
                     operation = new InsertInfo(parent, leaf, newInternalNode);
                     //This must be converted into CAS operation
                     //result := CAS(p → update, pupdate, <IFlag, op>)
                     //if parent.update == pupdate then operation=State.IFlag
                     //If R is a CAS object, then CAS(R, old, new) changes the value of
                     //R to new if the object’s value was old, in which case we say the CAS was successful.
-                    result = Update.CAS(parent.update, parentUpdate, new Update(State.IFlag, operation));
-                    Console.WriteLine("result");
-                    Console.WriteLine(result);
-                    Console.WriteLine("parentUpdate");
-                    Console.WriteLine(parentUpdate);
-                    Console.WriteLine("parentUpdate == result");
-                    Console.WriteLine(parentUpdate == result);
+                    var newUpdate = new Update(State.IFlag, operation);
+                    result = Update.CAS(ref parent.update, parentUpdate, newUpdate);
                     //update must have a CAS comparer!
                     if (result == parentUpdate)
                     {
@@ -194,9 +186,16 @@ namespace Task3
         {
             //CAS-Child(op → p, op → l, op → newInternal) ⊲ ichild CAS
             Console.WriteLine(operation.parent.ToString() + " " + operation.leaf.ToString() + " " + operation.newInternal.ToString());
-            InternalNode.CASChild(operation.parent, operation.leaf, operation.newInternal);
+            //InternalNode.CASChild(ref operation.parent, operation.leaf, operation.newInternal);
+            
+            if(operation.newInternal.key < operation.parent.key)
+                Interlocked.CompareExchange<Node>(ref operation.parent.left, operation.newInternal, operation.leaf);
+            else
+                Interlocked.CompareExchange<Node>(ref operation.parent.right, operation.newInternal, operation.leaf);
+            
             //67 CAS(op → p → update, hIFlag, opi, hClean, opi) ⊲ iunflag CAS
-            Update.CAS(operation.parent.update, new Update(State.IFlag, operation), new Update(State.Clean, operation));
+            Console.WriteLine(operation.parent.update);
+            Update.CAS(ref operation.parent.update, new Update(State.IFlag, operation), new Update(State.Clean, operation));
             Console.WriteLine(operation.parent.update);
         }
         
@@ -221,7 +220,7 @@ namespace Task3
             update = new Update();
         }
 
-        public static void CASChild(InternalNode parent, Node oldNode, Node newNode)
+        public static void CASChild(ref InternalNode parent, Node oldNode, Node newNode)
         {
             if(newNode.key < parent.key)
                 Interlocked.CompareExchange<Node>(ref parent.left, oldNode, newNode);
