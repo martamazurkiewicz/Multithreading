@@ -21,18 +21,17 @@ namespace Task3
 
         private string ToStringRecursive(Node tmpRoot)
         {
-            string result = "";
             if (tmpRoot is LeafNode)
-                return tmpRoot.key.ToString();
+                return tmpRoot.key + " ";
+            string result = "";
+            result += tmpRoot.key + " ";
             result += (ToStringRecursive(((InternalNode)tmpRoot).left) + " ");
             result += (ToStringRecursive(((InternalNode)tmpRoot).right) + " ");
-            result += tmpRoot.key;
             return result;
         }
         
         private (InternalNode grandparent, InternalNode parent, LeafNode leaf, Update pUpdate, Update gpUpdate) Search(int key)
         {
-            //if l → key != ∞1, then the following three statements hold:
             InternalNode grandparent = root;
             InternalNode parent = root;
             Node leaf = root;
@@ -120,7 +119,11 @@ namespace Task3
                 other = operation.parent.left;
             else
                 other = operation.parent.right;
-            InternalNode.CASChild(ref operation.grandparent, operation.parent, other);
+            //InternalNode.CASChild(ref operation.grandparent, operation.parent, other);
+            if(other.key < operation.parent.key)
+                Interlocked.CompareExchange<Node>(ref operation.grandparent.left, other, operation.parent);
+            else
+                Interlocked.CompareExchange<Node>(ref operation.grandparent.right, other, operation.parent);
             Update.CAS(ref operation.grandparent.update, new Update(State.DFlag, operation),
                 new Update(State.Clean, operation));
         }
@@ -184,18 +187,16 @@ namespace Task3
 
         private void HelpInsert(InsertInfo operation)
         {
-            //CAS-Child(op → p, op → l, op → newInternal) ⊲ ichild CAS
-            Console.WriteLine(operation.parent.ToString() + " " + operation.leaf.ToString() + " " + operation.newInternal.ToString());
-            //InternalNode.CASChild(ref operation.parent, operation.leaf, operation.newInternal);
-            
             if(operation.newInternal.key < operation.parent.key)
-                Interlocked.CompareExchange<Node>(ref operation.parent.left, operation.newInternal, operation.leaf);
+                Interlocked.CompareExchange(ref operation.parent.left, operation.newInternal, operation.leaf);
             else
-                Interlocked.CompareExchange<Node>(ref operation.parent.right, operation.newInternal, operation.leaf);
+                Interlocked.CompareExchange(ref operation.parent.right, operation.newInternal, operation.leaf);
             
             //67 CAS(op → p → update, hIFlag, opi, hClean, opi) ⊲ iunflag CAS
+            Console.WriteLine("preCas");
             Console.WriteLine(operation.parent.update);
             Update.CAS(ref operation.parent.update, new Update(State.IFlag, operation), new Update(State.Clean, operation));
+            Console.WriteLine("afterCas");
             Console.WriteLine(operation.parent.update);
         }
         
@@ -220,13 +221,13 @@ namespace Task3
             update = new Update();
         }
 
-        public static void CASChild(ref InternalNode parent, Node oldNode, Node newNode)
-        {
-            if(newNode.key < parent.key)
-                Interlocked.CompareExchange<Node>(ref parent.left, oldNode, newNode);
-            else
-                Interlocked.CompareExchange<Node>(ref parent.right, oldNode, newNode);
-        }
+        // public static void CASChild(ref InternalNode parent, Node oldNode, Node newNode)
+        // {
+        //     if(newNode.key < parent.key)
+        //         Interlocked.CompareExchange<Node>(ref parent.left, oldNode, newNode);
+        //     else
+        //         Interlocked.CompareExchange<Node>(ref parent.right, oldNode, newNode);
+        // }
 
         public override string ToString() => base.ToString() + " " + left.key + " " + right.key;
     }

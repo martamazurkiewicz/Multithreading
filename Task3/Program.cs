@@ -6,7 +6,11 @@ namespace Task3
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            var bst = new BST();
+            bst.Insert(7);
+            bst.Insert(32);
+            bst.Insert(-38);
+            Console.WriteLine(bst.ToString());
         }
     }
 }
