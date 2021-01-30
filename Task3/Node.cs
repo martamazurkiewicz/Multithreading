@@ -9,6 +9,6 @@
             this.key = key;
         }
 
-        public override string ToString() => key.ToString();
+        public override string ToString() => $"Key: {key}";
     }
 }
