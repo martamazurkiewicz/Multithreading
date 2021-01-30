@@ -35,27 +35,27 @@ namespace Task3
     {
         public State state;
         public Info info;
-        private object updateLock;
+        private SemaphoreSlim semaphore;
 
         public Update()
         {
             state = State.Clean;
             info = null;
-            updateLock = new object();
+            semaphore = new SemaphoreSlim(1,1);
         }
 
         public Update(Update oldUpdate)
         {
             state = oldUpdate.state;
             info = oldUpdate.info;
-            updateLock = new object();
+            semaphore = new SemaphoreSlim(1,1);
         }
         
         public Update(State state, Info info)
         {
             this.state = state;
             this.info = info;
-            updateLock = new object();
+            semaphore = new SemaphoreSlim(1,1);
         }
 
         // public static Update CAS(ref Update CASObject, Update oldValue, Update newValue)
@@ -68,14 +68,27 @@ namespace Task3
         //     return result;
         // }
 
-        public static Update CAS(ref Update CASObject, Update comparand, Update newValue)
+        // public static Update CAS(ref Update CASObject, Update comparand, Update newValue)
+        // {
+        //     Update oldValue;
+        //     do
+        //     {
+        //         oldValue = CASObject;
+        //         if (!oldValue.Equals(comparand)) return oldValue;
+        //     } while (Interlocked.CompareExchange(ref CASObject, newValue, comparand) != oldValue);
+        //     return oldValue;
+        // }
+        
+        public static Update CAS(ref Update CASObject, Update comparator, Update newValue)
         {
-            Update oldValue;
-            do
+            var oldValue = CASObject;
+            if (CASObject.semaphore.CurrentCount == 1)
             {
-                oldValue = CASObject;
-                if (!oldValue.Equals(comparand)) return oldValue;
-            } while (Interlocked.CompareExchange(ref CASObject, newValue, comparand) != oldValue);
+                CASObject.semaphore.Wait();
+                if (CASObject.Equals(comparator))
+                    CASObject = newValue;
+                oldValue.semaphore.Release();
+            }
             return oldValue;
         }
 

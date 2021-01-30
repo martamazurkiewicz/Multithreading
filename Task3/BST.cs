@@ -10,7 +10,7 @@ namespace Task3
 
         public BST()
         {
-            var leftChild = new InternalNode(int.MaxValue-1, new LeafNode(int.MaxValue-2), new LeafNode(int.MaxValue-1));
+            var leftChild = new InternalNode(int.MaxValue-1, null, new LeafNode(int.MaxValue-1));
             var rightChild = new LeafNode(int.MaxValue);
             root = new InternalNode(int.MaxValue, leftChild, rightChild);
         }
@@ -18,6 +18,21 @@ namespace Task3
         private bool IsDeletionPermitted(int key) => key != int.MaxValue-1 && key != int.MaxValue;
 
         public override string ToString() => ToStringRecursive(root);
+
+        public bool IsBSTCorrect() => isBSTCorrectRec(root, 0, Int32.MaxValue);
+        private bool isBSTCorrectRec(Node node, int min, int max) 
+        { 
+            /* false if this node violates the min/max constraints */
+            if (node.key < min || node.key > max)
+                return false;
+            /* an empty tree is BST */
+            if (node is LeafNode)
+                return true;
+            /* otherwise check the subtrees recursively  
+            tightening the min/max constraints */
+            // Allow only distinct values  
+            return isBSTCorrectRec(((InternalNode)node).left, min, node.key - 1) && isBSTCorrectRec(((InternalNode)node).right, node.key, max); 
+        }  
 
         private string ToStringRecursive(Node tmpRoot)
         {
@@ -141,6 +156,7 @@ namespace Task3
         
         public bool Insert(int key)
         {
+            Interlocked.CompareExchange(ref ((InternalNode)root.left).left, new LeafNode(key), null);
             InternalNode parent;
             InternalNode newInternalNode;
             LeafNode leaf;
@@ -191,13 +207,7 @@ namespace Task3
                 Interlocked.CompareExchange(ref operation.parent.left, operation.newInternal, operation.leaf);
             else
                 Interlocked.CompareExchange(ref operation.parent.right, operation.newInternal, operation.leaf);
-            
-            //67 CAS(op → p → update, hIFlag, opi, hClean, opi) ⊲ iunflag CAS
-            Console.WriteLine("preCas");
-            Console.WriteLine(operation.parent.update);
             Update.CAS(ref operation.parent.update, new Update(State.IFlag, operation), new Update(State.Clean, operation));
-            Console.WriteLine("afterCas");
-            Console.WriteLine(operation.parent.update);
         }
         
     }
