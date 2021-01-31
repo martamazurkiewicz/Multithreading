@@ -94,7 +94,6 @@ namespace Task3
                     }
                 }
             }
-            return false;
         }
 
         private bool HelpDelete(DeleteInfo operation)
